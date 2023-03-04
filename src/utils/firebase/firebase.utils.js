@@ -1,125 +1,114 @@
-import { initializeApp } from 'firebase/app';
-import { 
-    getAuth, 
-    signInWithRedirect, 
-    signInWithPopup, 
-    GoogleAuthProvider,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-} from 'firebase/auth'
+import { initializeApp } from "firebase/app";
 import {
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc,
-    collection,
-    writeBatch,
-    query,
-    getDocs
-} from 'firebase/firestore'
+  getAuth,
+  signInWithRedirect,
+  signInWithPopup,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  writeBatch,
+  query,
+  getDocs,
+} from "firebase/firestore";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyC-JblzK8FB4-BYdvGfWRZn3qj9SxM0pUQ",
-    authDomain: "aston-store-db.firebaseapp.com",
-    projectId: "aston-store-db",
-    storageBucket: "aston-store-db.appspot.com",
-    messagingSenderId: "1039731236797",
-    appId: "1:1039731236797:web:f070ee782af45ff1297cd4"
-  };
-  
-  // Initialize Firebase
-  const firebaseApp = initializeApp(firebaseConfig);
+  apiKey: "AIzaSyC-JblzK8FB4-BYdvGfWRZn3qj9SxM0pUQ",
+  authDomain: "aston-store-db.firebaseapp.com",
+  projectId: "aston-store-db",
+  storageBucket: "aston-store-db.appspot.com",
+  messagingSenderId: "1039731236797",
+  appId: "1:1039731236797:web:f070ee782af45ff1297cd4",
+};
 
-  const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase
+const firebaseApp = initializeApp(firebaseConfig);
 
-  googleProvider.setCustomParameters({
-    prompt: 'select_account'
-  });
+const googleProvider = new GoogleAuthProvider();
 
-  export const auth = getAuth();
-  export const signInWithGooglePopup = () => 
-    signInWithPopup(auth, googleProvider);
-  export const signInWithGoogleRedirect = () => 
-    signInWithRedirect(auth, googleProvider);
+googleProvider.setCustomParameters({
+  prompt: "select_account",
+});
 
-  export const db = getFirestore();
+export const auth = getAuth();
+export const signInWithGooglePopup = () =>
+  signInWithPopup(auth, googleProvider);
+export const signInWithGoogleRedirect = () =>
+  signInWithRedirect(auth, googleProvider);
 
-  export const addCollectionAndDocuments = async (
-    collectionKey, 
-    objectsToAdd 
-    ) => {
-    const collectionRef = collection(db, collectionKey);
-    const batch = writeBatch(db);
+export const db = getFirestore();
+
+export const addCollectionAndDocuments = async (
+  collectionKey,
+  objectsToAdd
+) => {
+  const collectionRef = collection(db, collectionKey);
+  const batch = writeBatch(db);
 
   objectsToAdd.forEach((object) => {
     const docRef = doc(collectionRef, object.title.toLowerCase());
     batch.set(docRef, object);
   });
 
-    await batch.commit();
-    console.log('done');
-  };
+  await batch.commit();
+  console.log("done");
+};
 
-  export const getCategoriesAndDocuments = async () => {
-     const collectionRef = collection(db, 'categories'); 
-     const q = query(collectionRef);
+export const getCategoriesAndDocuments = async () => {
+  const collectionRef = collection(db, "categories");
+  const q = query(collectionRef);
 
-     const querySnapshot = await getDocs(q);
-     const categoryMap = querySnapshot.docs.reduce((acc, docSnapshot) => {
-      const { title, items } = docSnapshot.data();
-      acc[title.toLowerCase()] =items;
-      return acc;
-     }, {})
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((docSnapshot) => docSnapshot.data());
+};
 
-     return categoryMap;
-  }
+export const createUserDocumentFromAuth = async (
+  userAuth,
+  additionalInformation = {}
+) => {
+  const userDocRef = doc(db, "users", userAuth.uid);
+  const userSnapshot = await getDoc(userDocRef);
 
-  export const createUserDocumentFromAuth = async (userAuth, 
-    additionalInformation = {}
-    ) => {
-    const userDocRef = doc(db, 'users', userAuth.uid);
+  if (!userSnapshot.exists()) {
+    const { displayName, email } = userAuth;
+    const createdAt = new Date();
 
-    console.log(userDocRef);
-
-    const userSnapshot = await getDoc(userDocRef);
-    console.log(userSnapshot);
-    console.log(userSnapshot.exists());
-
-    if (!userSnapshot.exists()) {
-        const { displayName, email } = userAuth;
-        const createdAt = new Date();
-
-        try {
-            await setDoc(userDocRef, {
-                displayName,
-                email,
-                createdAt,
-                ...additionalInformation
-            });
-        } catch (error) {
-                console.log('error creating the user', error.message);
-        }
+    try {
+      await setDoc(userDocRef, {
+        displayName,
+        email,
+        createdAt,
+        ...additionalInformation,
+      });
+    } catch (error) {
+      console.log("error creating the user", error.message);
     }
-
-    return userDocRef;
   }
 
-  export const createAuthUserWithEmailAndPassword = async (email, password) => {
-        if (!email || !password ) return;
+  return userDocRef;
+};
 
-        return await createUserWithEmailAndPassword (auth, email, password);
-  };
+export const createAuthUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) return;
 
+  return await createUserWithEmailAndPassword(auth, email, password);
+};
 
-  export const signInAuthUserWithEmailAndPassword = async (email, password) => {
-        if (!email || !password ) return;
+export const signInAuthUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) return;
 
-        return await signInWithEmailAndPassword (auth, email, password);
-  };
+  return await signInWithEmailAndPassword(auth, email, password);
+};
 
-  export const signOutUser = async () => await signOut(auth);
+export const signOutUser = async () => await signOut(auth);
 
-  export const onAuthStateChangedListener = (callback) => 
-  onAuthStateChanged(auth, callback)
+export const onAuthStateChangedListener = (callback) =>
+  onAuthStateChanged(auth, callback);

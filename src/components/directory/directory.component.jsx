@@ -24,13 +24,13 @@ const categories = [
     id: 4,
     title: "Womens",
     imageUrl: "https://i.ibb.co/GCCdy8t/womens.png",
-    route: 'shop/Womens'
+    route: 'shop/womens'
   },
   {
     id: 5,
     title: "Mens",
     imageUrl: "https://i.ibb.co/R70vBrQ/men.png",
-    route: 'shop/Mens'
+    route: 'shop/mens'
   }
 ]
 
